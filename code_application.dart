@@ -4,7 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:ffmpeg_kit_flutter_min_gpl/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter_min_gpl/return_code.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:gal/gal.dart';
+import 'package:path/path.dart' as p;
 
 void main() {
   runApp(const MaterialApp(
@@ -36,13 +36,11 @@ class _StatusCompressorAppState extends State<StatusCompressorApp> {
     });
 
     try {
-      final Directory tempDir = await getTemporaryDirectory();
-      final String outputPath = '${tempDir.path}/status_hd_output.mp4';
+      final Directory extDir = Directory('/storage/emulated/0/Download');
+      bool dirExists = await extDir.exists();
+      final Directory targetDir = dirExists ? extDir : await getTemporaryDirectory();
       
-      final File outputFile = File(outputPath);
-      if (outputFile.existsSync()) {
-        outputFile.deleteSync();
-      }
+      final String outputPath = '${targetDir.path}/status_hd_${DateTime.now().millisecondsSinceEpoch}.mp4';
 
       final String command = "-i '${video.path}' -c:v libx264 -preset ultrafast -crf 24 -vf scale=-2:1280 -r 30 -c:a aac -b:a 128k '$outputPath'";
 
@@ -50,8 +48,7 @@ class _StatusCompressorAppState extends State<StatusCompressorApp> {
       final returnCode = await session.getReturnCode();
 
       if (ReturnCode.isSuccess(returnCode)) {
-        await Gal.putVideo(outputPath);
-        setState(() => _statusText = "Succès ! Vidéo HD sauvegardée dans la galerie.");
+        setState(() => _statusText = "Succès ! Vidéo enregistrée dans Téléchargements :\n$outputPath");
       } else {
         setState(() => _statusText = "Erreur lors de la compression.");
       }
@@ -72,31 +69,32 @@ class _StatusCompressorAppState extends State<StatusCompressorApp> {
         foregroundColor: Colors.white,
       ),
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Text(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
                 _statusText,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white, fontSize: 18),
+                style: const TextStyle(color: Colors.white, fontSize: 16),
               ),
-            ),
-            if (_isCompressing)
-              const CircularProgressIndicator(color: Color(0xFF25D366))
-            else
-              ElevatedButton.icon(
-                onPressed: pickAndCompressVideo,
-                icon: const Icon(Icons.video_library),
-                label: const Text('Choisir et Compresser'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF25D366),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              const SizedBox(height: 30),
+              if (_isCompressing)
+                const CircularProgressIndicator(color: Color(0xFF25D366))
+              else
+                ElevatedButton.icon(
+                  onPressed: pickAndCompressVideo,
+                  icon: const Icon(Icons.video_library),
+                  label: const Text('Choisir et Compresser'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF25D366),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );
