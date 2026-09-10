@@ -42,8 +42,14 @@ class _StatusCompressorAppState extends State<StatusCompressorApp> {
       final String outputPath =
           '${tempDir.path}/status_${DateTime.now().millisecondsSinceEpoch}.mp4';
 
+      // Le filtre scale ci-dessous s'adapte automatiquement à l'orientation :
+      // - vidéo portrait  -> hauteur bloquée à 1280, largeur calculée
+      // - vidéo paysage   -> largeur bloquée à 1280, hauteur calculée
+      // Les guillemets simples protègent les virgules internes de l'expression
+      // "if(...)" pour que le parseur de filtres de FFmpeg ne les confonde pas
+      // avec un séparateur de filtres.
       final String command =
-          "-i '${video.path}' -c:v libx264 -preset veryfast -crf 24 -maxrate 2M -bufsize 4M -vf scale=-2:1280 -r 30 -c:a aac -b:a 128k -y '$outputPath'";
+          "-i '${video.path}' -c:v libx264 -preset medium -crf 20 -maxrate 3M -bufsize 6M -vf \"scale='if(gt(iw,ih),1280,-2)':'if(gt(iw,ih),-2,1280)'\" -r 30 -c:a aac -b:a 128k -y '$outputPath'";
 
       final session = await FFmpegKit.execute(command);
       final returnCode = await session.getReturnCode();
