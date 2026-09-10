@@ -10,43 +10,50 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Récupérer nos fichiers
+      - name: Récupérer nos fichiers locaux
         uses: actions/checkout@v4
 
-      - name: Installer Java
+      - name: Installer Java sur le serveur
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Installer Flutter
+      - name: Installer Flutter sur le serveur
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.19.6'
           channel: 'stable'
 
-      - name: Créer le projet
+      - name: Créer le projet Flutter (Sur le serveur)
         run: flutter create app_status
 
-      - name: Injecter le code
+      - name: Injecter notre code
         run: cp code_application.dart app_status/lib/main.dart
 
-      - name: Ajouter les packages stables
+      - name: Ajouter les packages (maintenus, sans 'gal' ni l'ancien ffmpeg_kit mort)
         run: |
           cd app_status
-          flutter pub add image_picker video_compress path_provider
+          flutter pub add image_picker ffmpeg_kit_flutter_new_min_gpl path_provider share_plus
 
-      - name: Configurer SDK Android
+      - name: Configurer minSdkVersion=24 (Groovy ou Kotlin DSL selon la version)
         run: |
-          sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 24/g' app_status/android/app/build.gradle
-          sed -i 's/flutter.minSdkVersion/24/g' app_status/android/app/build.gradle
+          cd app_status/android/app
+          if [ -f build.gradle.kts ]; then
+            echo "Template Kotlin DSL détecté"
+            sed -i 's/minSdk = flutter.minSdkVersion/minSdk = 24/' build.gradle.kts
+          fi
+          if [ -f build.gradle ]; then
+            echo "Template Groovy détecté"
+            sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 24/' build.gradle
+            sed -i 's/flutter.minSdkVersion/24/' build.gradle
+          fi
 
       - name: Compiler l'APK
         run: |
           cd app_status
           flutter build apk --release
 
-      - name: Livrer l'APK
+      - name: Livrer l'APK final
         uses: actions/upload-artifact@v4
         with:
           name: Mon-PureStatus-App
