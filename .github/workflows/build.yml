@@ -10,41 +10,43 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Récupérer nos fichiers locaux
+      - name: Récupérer nos fichiers
         uses: actions/checkout@v4
 
-      - name: Installer Java sur le serveur
+      - name: Installer Java
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Installer Flutter sur le serveur
+      - name: Installer Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.19.6'
           channel: 'stable'
 
-      - name: Créer le projet Flutter
+      - name: Créer le projet
         run: flutter create app_status
 
-      - name: Injecter notre code
+      - name: Injecter le code
         run: cp code_application.dart app_status/lib/main.dart
 
-      - name: Ajouter les packages propres
+      - name: Ajouter les packages stables
         run: |
           cd app_status
-          flutter pub add image_picker ffmpeg_kit_flutter_min_gpl path_provider path
+          flutter pub add image_picker video_compress path_provider
 
-      - name: Configurer la version Android
-        run: sed -i 's/flutter.minSdkVersion/24/g' app_status/android/app/build.gradle
+      - name: Configurer SDK Android
+        run: |
+          sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 24/g' app_status/android/app/build.gradle
+          sed -i 's/flutter.minSdkVersion/24/g' app_status/android/app/build.gradle
 
       - name: Compiler l'APK
         run: |
           cd app_status
           flutter build apk --release
 
-      - name: Livrer l'APK final
+      - name: Livrer l'APK
         uses: actions/upload-artifact@v4
         with:
           name: Mon-PureStatus-App

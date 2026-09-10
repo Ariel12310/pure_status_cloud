@@ -1,10 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:ffmpeg_kit_flutter_min_gpl/ffmpeg_kit.dart';
-import 'package:ffmpeg_kit_flutter_min_gpl/return_code.dart';
+import 'package:video_compress/video_compress.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:path/path.dart' as p;
 
 void main() {
   runApp(const MaterialApp(
@@ -32,29 +30,30 @@ class _StatusCompressorAppState extends State<StatusCompressorApp> {
 
     setState(() {
       _isCompressing = true;
-      _statusText = "Compression en cours... Patientez.";
+      _statusText = "Compression en cours...";
     });
 
     try {
-      final Directory extDir = Directory('/storage/emulated/0/Download');
-      bool dirExists = await extDir.exists();
-      final Directory targetDir = dirExists ? extDir : await getTemporaryDirectory();
-      
-      final String outputPath = '${targetDir.path}/status_hd_${DateTime.now().millisecondsSinceEpoch}.mp4';
+      final info = await VideoCompress.compressVideo(
+        video.path,
+        quality: VideoQuality.MediumQuality,
+        deleteOrigin: false,
+        includeAudio: true,
+      );
 
-      final String command = "-i '${video.path}' -c:v libx264 -preset ultrafast -crf 24 -vf scale=-2:1280 -r 30 -c:a aac -b:a 128k '$outputPath'";
+      if (info != null && info.file != null) {
+        final Directory extDir = Directory('/storage/emulated/0/Download');
+        final String targetPath = '${extDir.path}/status_${DateTime.now().millisecondsSinceEpoch}.mp4';
+        await info.file!.copy(targetPath);
 
-      final session = await FFmpegKit.execute(command);
-      final returnCode = await session.getReturnCode();
-
-      if (ReturnCode.isSuccess(returnCode)) {
-        setState(() => _statusText = "Succès ! Vidéo enregistrée dans Téléchargements :\n$outputPath");
+        setState(() => _statusText = "Succès ! Vidéo enregistrée dans :\n$targetPath");
       } else {
-        setState(() => _statusText = "Erreur lors de la compression.");
+        setState(() => _statusText = "Échec de la compression.");
       }
     } catch (e) {
       setState(() => _statusText = "Erreur : $e");
     } finally {
+      await VideoCompress.cancelCompression();
       setState(() => _isCompressing = false);
     }
   }
