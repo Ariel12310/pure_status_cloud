@@ -22,7 +22,7 @@ jobs:
       - name: Installer Flutter sur le serveur
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.0'
+          flutter-version: '3.19.6'
           channel: 'stable'
 
       - name: Créer le projet Flutter (Sur le serveur)
