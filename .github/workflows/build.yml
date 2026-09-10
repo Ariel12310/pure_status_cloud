@@ -49,3 +49,4 @@ jobs:
         with:
           name: Mon-PureStatus-App
           path: app_status/build/app/outputs/flutter-apk/app-release.apk
+
